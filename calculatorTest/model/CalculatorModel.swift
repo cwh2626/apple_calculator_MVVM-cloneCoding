@@ -14,11 +14,11 @@ struct Calculator {
     var operation: String = ""
     
     // 피연산자 설정 함수
-    mutating func setOperand(operand: Double) {
-        if operation.isEmpty {
-            firstOperand = operand
-        } else {
+    mutating func setOperand(operand: Double, calculateResult: Bool) {
+        if calculateResult {
             secondOperand = operand
+        } else {
+            firstOperand = operand
         }
     }
     
@@ -31,15 +31,23 @@ struct Calculator {
     func calculate() -> Double? {
         switch operation {
         case "+":
-            return firstOperand + secondOperand
+            return firstOperand + secondOperand < 10 ? decimalCalculate() : firstOperand + secondOperand
+            
         case "-":
             return firstOperand - secondOperand
         case "×":
             return firstOperand * secondOperand
         case "÷":
+            if secondOperand == Double.zero {
+                return nil
+            }
             return firstOperand / secondOperand
         default:
             return nil
         }
+    }
+    
+    private func decimalCalculate() -> Double {
+        return NSDecimalNumber(value: firstOperand).adding(NSDecimalNumber(value: secondOperand)).doubleValue
     }
 }
