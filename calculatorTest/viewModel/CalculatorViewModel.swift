@@ -1,9 +1,10 @@
 import Foundation
-// 계산기 뷰 모델 클래스
-class CalculatorViewModel: NSObject {
-    
-    @objc dynamic var displayText: String = "0" // 화면에 표시할 텍스트
-    @objc dynamic var operation: String = ""
+import Combine
+// 계산기 뷰 모델 클래스 // ObservableObject : @Published을 선언하기위한 프로토콜
+class CalculatorViewModel: ObservableObject {
+    // @Published : 해당 변수를 발행하여 다른 객체에서 해당 변수를 구독하여 감시가 가능하다 바인딩시에 편의 기능
+    @Published var displayText: String = "0" // 화면에 표시할 텍스트
+    @Published var operation: String = ""
     private var isPerformingOperation: Bool = false
     private var hasDecimalPoint: Bool = false
     private var errorState: Bool = false

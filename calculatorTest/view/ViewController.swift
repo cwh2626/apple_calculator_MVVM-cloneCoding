@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Combine
 
 class ViewController: UIViewController {
 
@@ -32,84 +33,34 @@ class ViewController: UIViewController {
     @IBOutlet weak var resultLabel: UILabel!
     
     private var viewModel = CalculatorViewModel() // 뷰 모델 인스턴스
-    
-    // displayTextObserver를 사용하여 ViewModel의 displayText 변경을 관찰
-    private var displayTextObserver: NSKeyValueObservation?
-    private var operationObserver: NSKeyValueObservation?
+    // Published를 구독후에 반환되는 Cancellable을 저장하는 변수
+    private var cancellables = Set<AnyCancellable>()
+    // combine은 KVO처럼 과거의 값을 가져올수없기에 view단에서 따로 이전값을 설정
+    private var activatedButton: String = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setButton()
         
-        // ViewModel의 displayText가 변경될 때마다 resultLabel의 text를 업데이트
-        displayTextObserver = viewModel.observe(\.displayText, options: [.new]) { [weak self] (viewModel, change) in
-            guard let newValue = change.newValue else { return }
-            self?.resultLabel.text = newValue
-        }
+        // ViewModel의 displayText가 변경될 때마다 클로저 함수 발생
+        // $displayText: 발행자(publisher)
+        // .sink : 구독자(Subscriber)가 클로저형태로 발행자와 연결하는거
+        // .store : 구독을 관리하는 Cancellable이라는 객체를 저장하는 느낌 이렇게 set이라는 변수에 저장하는 이유는
+        //          저장하지않으면 즉시 구독이 취소되어 클로저가 실행이 안되기 떄문이다
+        //          그래서 set객체가 수명이 다하면 자동으로 구독이 다 취소되는듯하다 나의 생각 ㅎ
+        viewModel.$displayText
+                    .sink { [weak self] value in
+                        self?.resultLabel.text = value
+                    }
+                    .store(in: &cancellables)
         
-        // ViewModel의 operation가 변경될 때마다 operation버튼의 컬러를 업데이트
-        operationObserver = viewModel.observe(\.operation, options: [.new,.old]) { [weak self] (viewModel, change) in
-            guard let newValue = change.newValue else { return }
-            self?.operationButtonToggle(new: false,value: change.oldValue ?? "")
-            self?.operationButtonToggle(new: true,value: newValue)
-// operationButtonToggle() 함수 만들기전 로직 -- START--
-//            switch change.oldValue ?? "" {
-//            case "+" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.plusButton.backgroundColor = buttonColor
-//                    self?.plusButton.setTitleColor(.white, for: .normal)
-//                }
-//            case "-" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.minusButton.backgroundColor = buttonColor
-//                    self?.minusButton.setTitleColor(.white, for: .normal)
-//                }
-//
-//            case "×" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.multiplyButton.backgroundColor = buttonColor
-//                    self?.multiplyButton.setTitleColor(.white, for: .normal)
-//                }
-//
-//            case "÷" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.divideButton.backgroundColor = buttonColor
-//                    self?.divideButton.setTitleColor(.white, for: .normal)
-//                }
-//
-//            default : break
-//            }
-//
-//            switch newValue {
-//            case "+" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.plusButton.backgroundColor = .white
-//                    self?.plusButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//            case "-" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.minusButton.backgroundColor = .white
-//                    self?.minusButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//
-//            case "×" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.multiplyButton.backgroundColor = .white
-//                    self?.multiplyButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//
-//            case "÷" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.divideButton.backgroundColor = .white
-//                    self?.divideButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//            default :
-//                return
-//            }
-// operationButtonToggle() 함수 만들기전 로직 -- END --
-            
-        }
-
+        viewModel.$operation
+                    .sink { [weak self] value in
+                        guard let _self = self else{ return }
+                        _self.operationButtonToggle(new: false,value: _self.activatedButton)
+                        _self.operationButtonToggle(new: true,value: value)
+                    }
+                    .store(in: &cancellables)
     }
     
     
@@ -145,6 +96,7 @@ class ViewController: UIViewController {
             if new {
                 button.backgroundColor = .white
                 button.setTitleColor(buttonColor, for: .normal)
+                self.activatedButton = button.currentTitle!
             } else {
                 button.backgroundColor = buttonColor
                 button.setTitleColor(.white, for: .normal)
