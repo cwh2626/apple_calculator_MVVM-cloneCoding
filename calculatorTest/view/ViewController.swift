@@ -32,84 +32,25 @@ class ViewController: UIViewController {
     @IBOutlet weak var resultLabel: UILabel!
     
     private var viewModel = CalculatorViewModel() // 뷰 모델 인스턴스
-    
-    // displayTextObserver를 사용하여 ViewModel의 displayText 변경을 관찰
-    private var displayTextObserver: NSKeyValueObservation?
-    private var operationObserver: NSKeyValueObservation?
+
+    private var activatedButton: String = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setButton()
-        
-        // ViewModel의 displayText가 변경될 때마다 resultLabel의 text를 업데이트
-        displayTextObserver = viewModel.observe(\.displayText, options: [.new]) { [weak self] (viewModel, change) in
-            guard let newValue = change.newValue else { return }
-            self?.resultLabel.text = newValue
+        bindViewModel()
+    }
+    
+    func bindViewModel() {
+        viewModel.textDidChange = { [weak self]  in
+            self?.resultLabel.text = self?.viewModel.displayText
         }
         
-        // ViewModel의 operation가 변경될 때마다 operation버튼의 컬러를 업데이트
-        operationObserver = viewModel.observe(\.operation, options: [.new,.old]) { [weak self] (viewModel, change) in
-            guard let newValue = change.newValue else { return }
-            self?.operationButtonToggle(new: false,value: change.oldValue ?? "")
-            self?.operationButtonToggle(new: true,value: newValue)
-// operationButtonToggle() 함수 만들기전 로직 -- START--
-//            switch change.oldValue ?? "" {
-//            case "+" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.plusButton.backgroundColor = buttonColor
-//                    self?.plusButton.setTitleColor(.white, for: .normal)
-//                }
-//            case "-" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.minusButton.backgroundColor = buttonColor
-//                    self?.minusButton.setTitleColor(.white, for: .normal)
-//                }
-//
-//            case "×" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.multiplyButton.backgroundColor = buttonColor
-//                    self?.multiplyButton.setTitleColor(.white, for: .normal)
-//                }
-//
-//            case "÷" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.divideButton.backgroundColor = buttonColor
-//                    self?.divideButton.setTitleColor(.white, for: .normal)
-//                }
-//
-//            default : break
-//            }
-//
-//            switch newValue {
-//            case "+" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.plusButton.backgroundColor = .white
-//                    self?.plusButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//            case "-" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.minusButton.backgroundColor = .white
-//                    self?.minusButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//
-//            case "×" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.multiplyButton.backgroundColor = .white
-//                    self?.multiplyButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//
-//            case "÷" :
-//                UIView.animate(withDuration: 0.5) {
-//                    self?.divideButton.backgroundColor = .white
-//                    self?.divideButton.setTitleColor(buttonColor, for: .normal)
-//                }
-//            default :
-//                return
-//            }
-// operationButtonToggle() 함수 만들기전 로직 -- END --
-            
+        viewModel.operationDidChange = { [weak self] in
+            guard let _self = self else { return }
+            _self.operationButtonToggle(new: false,value: _self.activatedButton )
+            _self.operationButtonToggle(new: true,value: _self.viewModel.operation)
         }
-
     }
     
     
@@ -145,6 +86,7 @@ class ViewController: UIViewController {
             if new {
                 button.backgroundColor = .white
                 button.setTitleColor(buttonColor, for: .normal)
+                self.activatedButton = button.currentTitle!
             } else {
                 button.backgroundColor = buttonColor
                 button.setTitleColor(.white, for: .normal)

@@ -2,8 +2,25 @@ import Foundation
 // 계산기 뷰 모델 클래스
 class CalculatorViewModel: NSObject {
     
-    @objc dynamic var displayText: String = "0" // 화면에 표시할 텍스트
-    @objc dynamic var operation: String = ""
+    // 클로저 함수를 이용한 변수 바인드 방법
+    var displayText: String = "0" {
+        // displayText값이 변경시에
+        // view단에서 선언해둔 클로저 함수인 textDidChange을 실행시켜 UIlabel에 값을 바인드하는방식
+        didSet {
+            textDidChange?()
+        }
+    }
+    
+    var operation: String = "" {
+        didSet {
+            operationDidChange?()
+        }
+    }
+    
+    var textDidChange: (() -> Void)?
+    var operationDidChange: (() -> Void)?
+    
+    
     private var isPerformingOperation: Bool = false
     private var hasDecimalPoint: Bool = false
     private var errorState: Bool = false
